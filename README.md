@@ -1,6 +1,6 @@
-# RAG ChatBot
+# SageBot — RAG Chatbot
 
-A production-quality Retrieval-Augmented Generation (RAG) chatbot that lets you upload documents and have an intelligent conversation about their contents. Built with FastAPI, Next.js, ChromaDB, and Claude claude-sonnet-4-6.
+A production-quality Retrieval-Augmented Generation (RAG) chatbot that lets you upload documents and have an intelligent conversation about their contents. Built with FastAPI, Next.js, ChromaDB, and Google Gemini.
 
 ---
 
@@ -13,7 +13,9 @@ A production-quality Retrieval-Augmented Generation (RAG) chatbot that lets you 
 │  ┌──────────────────┐          ┌──────────────────────────────┐  │
 │  │  DocumentManager │          │       ChatInterface           │  │
 │  │  ─ FileUpload    │          │  ─ SSE streaming              │  │
-│  │  ─ Status poll   │          │  ─ Source citations           │  │
+│  │  ─ Retrieval     │          │  ─ Source citations           │  │
+│  │    settings      │          │                               │  │
+│  │  ─ System status │          │                               │  │
 │  └────────┬─────────┘          └──────────────┬───────────────┘  │
 └───────────┼────────────────────────────────────┼─────────────────┘
             │  /api/documents/*                  │  /api/chat/*
@@ -29,15 +31,15 @@ A production-quality Retrieval-Augmented Generation (RAG) chatbot that lets you 
 │  └─────────────────┘                           └───────┬───────┘  │
 │                                                         │          │
 │  ┌──────────────────────────────────────────────────────▼──────┐  │
-│  │               GenerationService (Anthropic SDK)              │  │
-│  │               Claude claude-sonnet-4-6 — streaming SSE                 │  │
+│  │               GenerationService (Google Gemini SDK)          │  │
+│  │               gemini-1.5-flash — streaming SSE               │  │
 │  └──────────────────────────────────────────────────────────────┘  │
 └────────────────────────────────────────────────────────────────────┘
             │                              │
    ┌────────▼──────┐            ┌──────────▼──────┐
    │  ChromaDB      │            │  In-memory store│
-   │  (./chroma_db) │            │  documents dict │
-   │  Persistent    │            │  conversations  │
+   │  (./chroma_db) │            │  conversations  │
+   │  Persistent    │            │                 │
    └────────────────┘            └─────────────────┘
 ```
 
@@ -52,7 +54,8 @@ A production-quality Retrieval-Augmented Generation (RAG) chatbot that lets you 
 - **Source citations**: Every response shows which document chunks were used, with page numbers and relevance scores
 - **Conversation history**: Multi-turn chat with context carried across turns
 - **Background processing**: Documents are processed asynchronously; UI polls and shows live status
-- **Dark UI**: Clean, responsive dark-mode interface built with Tailwind CSS
+- **Light UI**: Clean, responsive light-mode interface built with Tailwind CSS
+- **Configurable retrieval**: Adjust the number of context chunks (Top K) directly from the sidebar
 
 ---
 
@@ -60,7 +63,7 @@ A production-quality Retrieval-Augmented Generation (RAG) chatbot that lets you 
 
 | Layer | Technology |
 |---|---|
-| LLM | Anthropic Claude claude-sonnet-4-6 |
+| LLM | Google Gemini (`gemini-1.5-flash`) |
 | Embeddings | `all-MiniLM-L6-v2` (SentenceTransformers) |
 | Vector store | ChromaDB (persistent, cosine similarity) |
 | Sparse search | BM25 (rank-bm25) |
@@ -82,7 +85,7 @@ A production-quality Retrieval-Augmented Generation (RAG) chatbot that lets you 
 
 - **Python** 3.10 or 3.11
 - **Node.js** 18 or 20
-- **Anthropic API key** — get one at https://console.anthropic.com
+- **Google Gemini API key** — get one at https://aistudio.google.com/app/apikey
 
 ---
 
@@ -99,28 +102,32 @@ cd /path/to/rag-chatbot
 ```bash
 cd backend
 
+# Create and activate a virtual environment
+python -m venv .venv
+source .venv/bin/activate  # Windows: .venv\Scripts\activate
+
 # Install Python dependencies
 pip install -r requirements.txt
 
-# Copy the example env file
+# Create your env file
 cp .env.example .env
 ```
 
-Open `.env` and fill in your Anthropic API key:
+Open `.env` and fill in your Gemini API key:
 
 ```
-ANTHROPIC_API_KEY=sk-ant-...your-key-here...
+GEMINI_API_KEY=your-key-here
 ```
 
 The other defaults work out of the box but can be tuned:
 
 | Variable | Default | Description |
 |---|---|---|
-| `CLAUDE_MODEL` | `claude-sonnet-4-6` | Claude model ID |
+| `GEMINI_MODEL` | `gemini-1.5-flash` | Gemini model ID |
 | `EMBEDDING_MODEL` | `all-MiniLM-L6-v2` | SentenceTransformer model |
 | `CHUNK_SIZE` | `512` | Max tokens per chunk |
 | `CHUNK_OVERLAP` | `50` | Token overlap between chunks |
-| `TOP_K_RESULTS` | `5` | Number of chunks to retrieve |
+| `TOP_K_RESULTS` | `5` | Default chunks retrieved per question |
 | `MAX_FILE_SIZE_MB` | `50` | Max upload size |
 
 ### 3. Frontend setup
@@ -134,10 +141,11 @@ npm install
 
 ```bash
 cd backend
+source .venv/bin/activate
 python run.py
 ```
 
-The API will be available at http://localhost:8000. You can explore the interactive docs at http://localhost:8000/docs.
+The API will be available at http://localhost:8000. Interactive docs at http://localhost:8000/docs.
 
 ### 5. Run the frontend
 
@@ -156,23 +164,25 @@ Navigate to **http://localhost:3000** in your browser.
 
 ## Usage Guide
 
-1. **Upload a document**: Use the left sidebar to drag and drop (or click to browse) a PDF, Word, text, Markdown, or CSV file. The status badge will show "Processing" while the backend parses and indexes it.
+1. **Upload a document**: Use the left panel to drag and drop (or click to browse) a PDF, Word, text, Markdown, or CSV file. The status badge will show "Indexing" while the backend parses and indexes it.
 
 2. **Wait for indexing**: Once the badge turns green ("Ready"), the document is fully indexed and searchable.
 
 3. **Ask questions**: Type your question in the chat box and press Enter (or click Send). The assistant will:
    - Embed your query
    - Run hybrid retrieval (vector + BM25) across all indexed documents
-   - Stream Claude's answer token by token
+   - Stream Gemini's answer token by token
    - Show source citations at the bottom of the response
 
 4. **Explore sources**: Click "N sources used" below any assistant response to expand the citation cards, which show the document name, page number, excerpt, and relevance score.
 
-5. **Continue the conversation**: Follow-up questions maintain context from previous turns (last 5 turns of history are sent to Claude).
+5. **Continue the conversation**: Follow-up questions maintain context from previous turns.
 
-6. **Clear conversation**: Click "Clear" in the top-right of the chat area to start fresh.
+6. **Adjust retrieval depth**: Use the **Context chunks** slider in the left panel to control how many document passages are retrieved per question (1 = precise, 15 = broad).
 
-7. **Delete a document**: Hover over a document card in the sidebar and click the trash icon. This removes both the file and all its indexed chunks.
+7. **Clear conversation**: Click **Clear Conversation** in the left panel's Chat Controls section to start a fresh session. You'll be asked to confirm before anything is deleted.
+
+8. **Delete a document**: Hover over a document card in the panel and click the trash icon. This removes both the file and all its indexed chunks.
 
 ---
 
@@ -212,23 +222,24 @@ rag-chatbot/
 │   │   │   ├── document_processor.py  # Parse + chunk documents
 │   │   │   ├── embeddings.py          # SentenceTransformer wrapper
 │   │   │   ├── retrieval.py           # ChromaDB + BM25 + RRF
-│   │   │   └── generation.py          # Anthropic Claude streaming
+│   │   │   └── generation.py          # Google Gemini streaming
 │   │   └── api/
 │   │       ├── documents.py     # Upload/list/delete endpoints
 │   │       └── chat.py          # Stream/sync chat endpoints
-│   ├── uploads/                 # Uploaded files (gitignored content)
-│   ├── chroma_db/               # ChromaDB persistence
+│   ├── uploads/                 # Uploaded files (gitignored)
+│   ├── chroma_db/               # ChromaDB persistence (gitignored)
 │   ├── requirements.txt
 │   ├── .env.example
 │   └── run.py                   # uvicorn entrypoint
 └── frontend/
     ├── app/
     │   ├── layout.tsx           # Root layout, Inter font
-    │   ├── page.tsx             # Two-panel layout
+    │   ├── page.tsx             # Two-panel layout, shared state
     │   └── globals.css          # Tailwind + custom animations
     ├── components/
     │   ├── ChatInterface.tsx    # Main chat, SSE streaming logic
-    │   ├── DocumentManager.tsx  # Document list, polling, delete
+    │   ├── DocumentManager.tsx  # Full sidebar: docs, retrieval settings,
+    │   │                        # chat controls, system status
     │   ├── FileUpload.tsx       # Drag & drop uploader
     │   ├── MessageBubble.tsx    # User/assistant message rendering
     │   └── SourceCitations.tsx  # Collapsible source cards
@@ -250,15 +261,15 @@ rag-chatbot/
    - The query is embedded and used to retrieve top-K candidates from ChromaDB (dense/semantic).
    - The query is tokenised and scored against the BM25 index (sparse/keyword).
    - Both ranked lists are merged using **Reciprocal Rank Fusion**: `score(d) = Σ 1/(k + rank(d))` where k=60.
-   - The top-K fused results are passed to Claude as numbered context documents.
+   - The top-K fused results are passed to Gemini as numbered context documents.
 
-4. **Generation**: Claude receives a system prompt with the numbered source documents and instruction to cite them as [Source N], plus the last 5 turns of conversation history.
+4. **Generation**: Gemini receives a system prompt with the numbered source documents and instructions to cite them as [Source N], plus the conversation history for multi-turn context.
 
 ---
 
 ## Troubleshooting
 
-**Backend won't start**: Make sure `.env` exists with a valid `ANTHROPIC_API_KEY`.
+**Backend won't start**: Make sure `.env` exists with a valid `GEMINI_API_KEY`.
 
 **"Model not loaded" error**: The SentenceTransformer model downloads on first run (~90 MB). Wait for it to finish.
 
