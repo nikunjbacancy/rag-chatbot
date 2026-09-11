@@ -1,6 +1,7 @@
 const API_BASE = '/api'
-// SSE streaming must bypass the Next.js dev proxy (which buffers SSE)
-const BACKEND_DIRECT = 'http://localhost:8000'
+// SSE streaming bypasses the Next.js proxy (which buffers SSE responses).
+// In production this points to the Railway backend URL via NEXT_PUBLIC_BACKEND_URL.
+const BACKEND_DIRECT = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000'
 
 // ------------------------------------------------------------------ //
 // TypeScript interfaces matching backend schemas                       //

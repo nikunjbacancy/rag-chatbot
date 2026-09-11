@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     chunk_size: int = 512
     chunk_overlap: int = 50
     top_k_results: int = 5
+    cors_origins: str = "http://localhost:3000"
 
     class Config:
         env_file = ".env"
