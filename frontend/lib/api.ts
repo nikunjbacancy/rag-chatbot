@@ -111,7 +111,7 @@ export const documentsApi = {
   },
 
   list: async (): Promise<DocumentListResponse> => {
-    const res = await fetch(`${API_BASE}/documents/`)
+    const res = await fetch(`${API_BASE}/documents`)
     if (!res.ok) {
       throw new Error(`Failed to fetch documents: ${res.status}`)
     }

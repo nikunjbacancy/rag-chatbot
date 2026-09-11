@@ -72,6 +72,7 @@ app = FastAPI(
     description="Retrieval-Augmented Generation chatbot with hybrid search.",
     version="1.0.0",
     lifespan=lifespan,
+    redirect_slashes=False,
 )
 
 # CORS — allow the Next.js dev server and production origin

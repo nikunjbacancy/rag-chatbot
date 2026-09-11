@@ -18,7 +18,7 @@ from app.models.schemas import (
 )
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/chat", tags=["chat"])
+router = APIRouter(prefix="/api/chat", tags=["chat"], redirect_slashes=False)
 
 # ------------------------------------------------------------------ #
 # In-memory conversation store                                         #

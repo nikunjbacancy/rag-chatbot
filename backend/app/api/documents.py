@@ -17,7 +17,7 @@ from app.models.schemas import (
 )
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/api/documents", tags=["documents"])
+router = APIRouter(prefix="/api/documents", tags=["documents"], redirect_slashes=False)
 
 # ------------------------------------------------------------------ #
 # Document metadata store (in-memory, persisted to JSON on disk)      #
