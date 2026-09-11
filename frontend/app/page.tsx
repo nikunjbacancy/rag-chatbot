@@ -57,7 +57,7 @@ export default function Home() {
       {/* ── Body ── */}
       <div className="flex flex-1 overflow-hidden">
         {sidebarOpen && (
-          <aside className="w-72 flex-shrink-0 border-r border-gray-200 bg-white overflow-y-auto">
+          <aside className="w-72 flex-shrink-0 border-r border-gray-200 bg-white flex flex-col">
             <DocumentManager
               topK={topK}
               onTopKChange={setTopK}
