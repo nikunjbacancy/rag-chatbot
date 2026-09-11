@@ -374,9 +374,13 @@ export default function DocumentManager({ topK, onTopKChange, onClearChat }: Pro
               <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ backgroundColor: '#02B3A8' }} />
               <span className="text-[10px] font-medium" style={{ color: '#02B3A8' }}>Ready</span>
               <span className="text-[10px] text-gray-300 mx-0.5">·</span>
-              <span className="text-[10px] text-gray-500">{health.collection_stats.total_documents} docs</span>
+              <span className="text-[10px] text-gray-500">
+                {documents.length} doc{documents.length !== 1 ? 's' : ''}
+              </span>
               <span className="text-[10px] text-gray-300 mx-0.5">·</span>
-              <span className="text-[10px] text-gray-500">{health.collection_stats.total_chunks} chunks</span>
+              <span className="text-[10px] text-gray-500">
+                {documents.reduce((sum, d) => sum + d.chunk_count, 0)} chunks
+              </span>
             </div>
             <span className="text-[9px] font-mono text-gray-400 truncate max-w-[90px]" title={health.model}>
               {health.model}

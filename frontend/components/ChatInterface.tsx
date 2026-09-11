@@ -9,10 +9,30 @@ import MessageBubble from './MessageBubble'
 import clsx from 'clsx'
 
 const EXAMPLE_PROMPTS = [
-  { icon: <BookOpen className="w-3.5 h-3.5" />, text: 'Summarise the key topics in my documents' },
-  { icon: <Search className="w-3.5 h-3.5" />,   text: 'What are the main findings or conclusions?' },
-  { icon: <Brain className="w-3.5 h-3.5" />,    text: 'Explain the most important concepts' },
-  { icon: <Zap className="w-3.5 h-3.5" />,      text: 'List the action items or next steps' },
+  {
+    icon: <BookOpen className="w-3.5 h-3.5" />,
+    title: 'Key Topics',
+    hint: 'Get a high-level overview of your documents',
+    prompt: 'Summarise the key topics in my documents',
+  },
+  {
+    icon: <Search className="w-3.5 h-3.5" />,
+    title: 'Main Findings',
+    hint: 'What conclusions or results were drawn?',
+    prompt: 'What are the main findings or conclusions?',
+  },
+  {
+    icon: <Brain className="w-3.5 h-3.5" />,
+    title: 'Core Concepts',
+    hint: 'Break down the most important ideas',
+    prompt: 'Explain the most important concepts',
+  },
+  {
+    icon: <Zap className="w-3.5 h-3.5" />,
+    title: 'Action Items',
+    hint: 'Extract next steps and tasks to act on',
+    prompt: 'List the action items or next steps',
+  },
 ]
 
 interface UIMessage extends ChatMessage {
@@ -145,50 +165,85 @@ export default function ChatInterface({ topK, clearChatRef }: Props) {
       {/* ── Messages ── */}
       <div className="flex-1 overflow-y-auto px-5 py-6 space-y-5">
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full gap-6 text-center px-4">
+          <div className="flex flex-col items-center justify-center h-full gap-7 text-center px-6">
+
+            {/* Logo */}
             <Image
               src="/logo.png"
               alt="SageBot"
-              width={110}
-              height={110}
+              width={92}
+              height={92}
               className="object-contain"
             />
 
-            <div>
-              <h2 className="text-xl font-bold" style={{ color: '#011942' }}>Hello, I'm SageBot</h2>
-              <p className="text-sm text-gray-500 mt-2 max-w-md leading-relaxed">
-                Upload documents in the panel and ask me anything about them.
-                I'll retrieve the most relevant information and cite my sources.
+            {/* Hero text */}
+            <div className="space-y-1.5">
+              <h2 className="text-2xl font-bold tracking-tight" style={{ color: '#011942' }}>
+                Hello, I'm SageBot
+              </h2>
+              <p className="text-sm font-medium" style={{ color: '#02B3A8' }}>
+                Your AI assistant for intelligent document Q&amp;A
+              </p>
+              <p className="text-xs text-gray-400 mt-2 max-w-sm mx-auto leading-relaxed">
+                Upload a document in the panel, then ask me anything —
+                I'll find the most relevant passages and cite every source.
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 w-full max-w-lg">
-              {EXAMPLE_PROMPTS.map(({ icon, text }) => (
+            {/* Divider */}
+            <div className="flex items-center gap-3 w-full max-w-md">
+              <div className="flex-1 h-px bg-gray-200" />
+              <span className="text-[11px] text-gray-400 font-medium tracking-wide">Try asking</span>
+              <div className="flex-1 h-px bg-gray-200" />
+            </div>
+
+            {/* Prompt cards */}
+            <div className="grid grid-cols-2 gap-3 w-full max-w-lg">
+              {EXAMPLE_PROMPTS.map(({ icon, title, hint, prompt }) => (
                 <button
-                  key={text}
-                  onClick={() => { setInputValue(text); inputRef.current?.focus() }}
-                  className="flex items-center gap-2.5 text-left px-4 py-3 rounded-xl border border-gray-200 bg-white transition-all text-xs text-gray-600 group shadow-sm"
+                  key={prompt}
+                  onClick={() => { setInputValue(prompt); inputRef.current?.focus() }}
+                  className="flex flex-col items-start gap-2.5 text-left p-4 rounded-xl border border-gray-200 bg-white shadow-sm transition-all"
                   onMouseEnter={e => {
-                    e.currentTarget.style.backgroundColor = '#E0EEFD'
                     e.currentTarget.style.borderColor = '#016CE1'
-                    e.currentTarget.style.color = '#016CE1'
+                    e.currentTarget.style.backgroundColor = '#E0EEFD'
                   }}
                   onMouseLeave={e => {
-                    e.currentTarget.style.backgroundColor = ''
                     e.currentTarget.style.borderColor = ''
-                    e.currentTarget.style.color = ''
+                    e.currentTarget.style.backgroundColor = ''
                   }}
                 >
-                  <span style={{ color: '#016CE1' }} className="flex-shrink-0">{icon}</span>
-                  {text}
+                  <div
+                    className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+                    style={{ backgroundColor: '#E0EEFD' }}
+                  >
+                    <span style={{ color: '#016CE1' }}>{icon}</span>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold text-gray-800">{title}</p>
+                    <p className="text-[11px] text-gray-400 mt-0.5 leading-snug">{hint}</p>
+                  </div>
                 </button>
               ))}
             </div>
 
-            <p className="text-[11px] text-gray-400 flex items-center gap-1.5">
-              <Sparkles className="w-3 h-3" style={{ color: '#02B3A8' }} />
-              Hybrid vector + BM25 retrieval · Source citations · Streaming responses
-            </p>
+            {/* Feature pills */}
+            <div className="flex items-center gap-2 flex-wrap justify-center">
+              {[
+                { icon: <Search className="w-3 h-3" />, label: 'Hybrid Search' },
+                { icon: <Sparkles className="w-3 h-3" />, label: 'Source Citations' },
+                { icon: <Zap className="w-3 h-3" />, label: 'Live Streaming' },
+              ].map(({ icon, label }) => (
+                <span
+                  key={label}
+                  className="inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full border"
+                  style={{ backgroundColor: '#E0EEFD', color: '#016CE1', borderColor: 'rgba(1,108,225,0.2)' }}
+                >
+                  {icon}{label}
+                </span>
+              ))}
+            </div>
+
           </div>
         ) : (
           messages.map(msg => (
