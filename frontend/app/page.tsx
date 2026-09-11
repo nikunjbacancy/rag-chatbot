@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useState } from 'react'
+import Image from 'next/image'
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react'
 import ChatInterface from '@/components/ChatInterface'
 import DocumentManager from '@/components/DocumentManager'
@@ -13,26 +14,38 @@ export default function Home() {
   return (
     <div className="flex flex-col h-screen overflow-hidden bg-gray-50">
       {/* ── Header ── */}
-      <header className="flex items-center justify-between px-5 py-3 border-b border-gray-200 bg-white/90 backdrop-blur-md flex-shrink-0 z-10">
+      <header className="flex items-center justify-between px-5 py-2.5 border-b border-gray-200 bg-white flex-shrink-0 z-10">
         <div className="flex items-center gap-3">
-          <div className="relative flex items-center justify-center w-9 h-9 rounded-xl bg-gradient-to-br from-violet-600 to-purple-700 shadow-md shadow-violet-300/50">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" className="text-white">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z" fill="currentColor" opacity="0.3"/>
-              <path d="M12 3c-1.5 0-2.9.4-4.1 1.1L12 8l4.1-3.9C14.9 3.4 13.5 3 12 3z" fill="currentColor"/>
-              <path d="M5 7.9L9 12l-4 4.1C3.4 14.9 3 12 3s.4-2.9 1-4.1z" fill="currentColor" opacity="0.7"/>
-              <path d="M19 7.9C19.6 9.1 20 10.5 20 12s-.4 2.9-1 4.1L15 12l4-4.1z" fill="currentColor" opacity="0.7"/>
-              <path d="M12 21c1.5 0 2.9-.4 4.1-1.1L12 16l-4.1 3.9C9.1 20.6 10.5 21 12 21z" fill="currentColor"/>
-            </svg>
-          </div>
+          <Image
+            src="/logo.png"
+            alt="SageBot"
+            width={44}
+            height={44}
+            className="rounded-xl object-contain"
+            priority
+          />
           <div>
-            <h1 className="text-sm font-bold text-gray-900 tracking-wide">SageBot</h1>
-            <p className="text-[10px] text-violet-500 leading-none mt-0.5">Your wise document assistant</p>
+            <h1 className="text-sm font-bold tracking-wide" style={{ color: '#011942' }}>SageBot</h1>
+            <p className="text-[10px] leading-none mt-0.5" style={{ color: '#02B3A8' }}>Your wise document assistant</p>
           </div>
         </div>
 
         <button
           onClick={() => setSidebarOpen(!sidebarOpen)}
-          className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-900 px-3 py-1.5 rounded-lg border border-gray-200 hover:border-gray-300 hover:bg-gray-100 transition-all"
+          className="flex items-center gap-1.5 text-xs text-gray-500 px-3 py-1.5 rounded-lg border border-gray-200 transition-all"
+          style={{ ['--hover-color' as string]: '#016CE1' }}
+          onMouseEnter={e => {
+            const el = e.currentTarget
+            el.style.borderColor = '#016CE1'
+            el.style.color = '#016CE1'
+            el.style.backgroundColor = '#E0EEFD'
+          }}
+          onMouseLeave={e => {
+            const el = e.currentTarget
+            el.style.borderColor = ''
+            el.style.color = ''
+            el.style.backgroundColor = ''
+          }}
         >
           {sidebarOpen
             ? <><PanelLeftClose className="w-3.5 h-3.5" /> Hide Panel</>

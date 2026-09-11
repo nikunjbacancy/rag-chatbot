@@ -12,9 +12,11 @@ export default function SourceCitations({ sources }: { sources: Source[] }) {
     <div className="mt-2.5">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="flex items-center gap-1.5 text-[11px] text-gray-400 hover:text-violet-600 transition-colors group"
+        className="flex items-center gap-1.5 text-[11px] text-gray-400 transition-colors group"
+        onMouseEnter={e => e.currentTarget.style.color = '#016CE1'}
+        onMouseLeave={e => e.currentTarget.style.color = ''}
       >
-        <BookOpenCheck className="w-3.5 h-3.5 text-violet-500 group-hover:text-violet-600" />
+        <BookOpenCheck className="w-3.5 h-3.5" style={{ color: '#016CE1' }} />
         <span>{sources.length} source{sources.length !== 1 ? 's' : ''} used</span>
         {expanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
       </button>
@@ -30,12 +32,13 @@ export default function SourceCitations({ sources }: { sources: Source[] }) {
               >
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex items-center gap-1.5 min-w-0">
-                    <FileText className="w-3 h-3 text-violet-400 flex-shrink-0" />
+                    <FileText className="w-3 h-3 flex-shrink-0" style={{ color: '#016CE1' }} />
                     <span className="text-[11px] font-medium text-gray-700 truncate" title={s.document_name}>
                       {s.document_name}
                     </span>
                   </div>
-                  <span className="flex-shrink-0 text-[10px] font-mono text-violet-600 bg-violet-50 border border-violet-200 px-1.5 py-0.5 rounded-md">
+                  <span className="flex-shrink-0 text-[10px] font-mono px-1.5 py-0.5 rounded-md border font-medium"
+                    style={{ color: '#016CE1', backgroundColor: '#E0EEFD', borderColor: 'rgba(1,108,225,0.25)' }}>
                     [{i + 1}]
                   </span>
                 </div>
@@ -46,14 +49,16 @@ export default function SourceCitations({ sources }: { sources: Source[] }) {
                   </div>
                 )}
 
-                <p className="text-[11px] text-gray-500 leading-relaxed line-clamp-3 italic border-l-2 border-violet-300 pl-2">
+                <p className="text-[11px] text-gray-500 leading-relaxed line-clamp-3 italic pl-2"
+                  style={{ borderLeft: '2px solid #02B3A8' }}>
                   {s.chunk_text}
                 </p>
 
                 <div className="flex items-center gap-2">
                   <span className="text-[10px] text-gray-400">Relevance</span>
                   <div className="flex-1 h-1 bg-gray-200 rounded-full overflow-hidden">
-                    <div className="h-full bg-gradient-to-r from-violet-500 to-purple-400 rounded-full" style={{ width: `${pct}%` }} />
+                    <div className="h-full rounded-full"
+                      style={{ width: `${pct}%`, background: 'linear-gradient(to right, #016CE1, #02B3A8)' }} />
                   </div>
                 </div>
               </div>

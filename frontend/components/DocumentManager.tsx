@@ -10,8 +10,6 @@ import { documentsApi, systemApi, DocumentResponse, HealthStatus } from '@/lib/a
 import FileUpload from './FileUpload'
 import clsx from 'clsx'
 
-// ── Helpers ────────────────────────────────────────────────────────
-
 function formatBytes(b: number) {
   if (b < 1024) return `${b} B`
   if (b < 1024 * 1024) return `${(b / 1024).toFixed(1)} KB`
@@ -28,29 +26,28 @@ function timeAgo(ts: string): string {
   return `${Math.floor(hrs / 24)}d ago`
 }
 
-// ── Sub-components ─────────────────────────────────────────────────
-
 function SectionLabel({ icon, title }: { icon: React.ReactNode; title: string }) {
   return (
     <div className="flex items-center gap-1.5 px-1 mb-2">
-      <span className="text-violet-400">{icon}</span>
+      <span style={{ color: '#016CE1' }}>{icon}</span>
       <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-400">{title}</span>
     </div>
   )
 }
 
 function FileTypeBadge({ type }: { type: string }) {
-  const map: Record<string, { label: string; cls: string }> = {
-    pdf:  { label: 'PDF',  cls: 'bg-red-50 text-red-500 border-red-200' },
-    docx: { label: 'DOCX', cls: 'bg-blue-50 text-blue-500 border-blue-200' },
-    md:   { label: 'MD',   cls: 'bg-violet-50 text-violet-500 border-violet-200' },
-    csv:  { label: 'CSV',  cls: 'bg-emerald-50 text-emerald-500 border-emerald-200' },
-    txt:  { label: 'TXT',  cls: 'bg-gray-50 text-gray-500 border-gray-200' },
+  const map: Record<string, { label: string; bg: string; color: string; border: string }> = {
+    pdf:  { label: 'PDF',  bg: '#fff1f2', color: '#e11d48', border: '#fecdd3' },
+    docx: { label: 'DOCX', bg: '#E0EEFD', color: '#016CE1', border: '#bfdbfe' },
+    md:   { label: 'MD',   bg: '#f0fdf4', color: '#16a34a', border: '#bbf7d0' },
+    csv:  { label: 'CSV',  bg: '#f0fdfa', color: '#02B3A8', border: '#99f6e4' },
+    txt:  { label: 'TXT',  bg: '#f9fafb', color: '#6b7280', border: '#e5e7eb' },
   }
-  const entry = map[type.toLowerCase()] ?? { label: type.toUpperCase(), cls: 'bg-gray-50 text-gray-500 border-gray-200' }
+  const e = map[type.toLowerCase()] ?? { label: type.toUpperCase(), bg: '#f9fafb', color: '#6b7280', border: '#e5e7eb' }
   return (
-    <span className={clsx('text-[9px] font-bold px-1.5 py-0.5 rounded border tracking-wide', entry.cls)}>
-      {entry.label}
+    <span className="text-[9px] font-bold px-1.5 py-0.5 rounded border tracking-wide"
+      style={{ backgroundColor: e.bg, color: e.color, borderColor: e.border }}>
+      {e.label}
     </span>
   )
 }
@@ -58,11 +55,11 @@ function FileTypeBadge({ type }: { type: string }) {
 function FileIcon({ type }: { type: string }) {
   const cls = 'w-4 h-4 flex-shrink-0'
   switch (type.toLowerCase()) {
-    case 'pdf':  return <FileText        className={clsx(cls, 'text-red-400')} />
-    case 'docx': return <FileText        className={clsx(cls, 'text-blue-400')} />
-    case 'md':   return <FileText        className={clsx(cls, 'text-violet-400')} />
-    case 'csv':  return <FileSpreadsheet className={clsx(cls, 'text-emerald-400')} />
-    default:     return <FileText        className={clsx(cls, 'text-gray-400')} />
+    case 'pdf':  return <FileText        className={cls} style={{ color: '#e11d48' }} />
+    case 'docx': return <FileText        className={cls} style={{ color: '#016CE1' }} />
+    case 'md':   return <FileText        className={cls} style={{ color: '#16a34a' }} />
+    case 'csv':  return <FileSpreadsheet className={cls} style={{ color: '#02B3A8' }} />
+    default:     return <FileText        className={cls} style={{ color: '#9ca3af' }} />
   }
 }
 
@@ -74,8 +71,6 @@ function StatusPill({ status }: { status: DocumentResponse['status'] }) {
   return <span className="inline-flex items-center gap-1 text-[10px] font-medium text-red-600 bg-red-50 px-2 py-0.5 rounded-full border border-red-200"><AlertCircle className="w-2.5 h-2.5" />Failed</span>
 }
 
-// ── Main component ─────────────────────────────────────────────────
-
 interface Props {
   topK: number
   onTopKChange: (v: number) => void
@@ -83,16 +78,14 @@ interface Props {
 }
 
 export default function DocumentManager({ topK, onTopKChange, onClearChat }: Props) {
-  const [documents, setDocuments]   = useState<DocumentResponse[]>([])
-  const [loading, setLoading]       = useState(true)
-  const [deletingId, setDeletingId] = useState<string | null>(null)
-  const [docError, setDocError]     = useState<string | null>(null)
-  const [health, setHealth]         = useState<HealthStatus | null>(null)
+  const [documents, setDocuments]       = useState<DocumentResponse[]>([])
+  const [loading, setLoading]           = useState(true)
+  const [deletingId, setDeletingId]     = useState<string | null>(null)
+  const [docError, setDocError]         = useState<string | null>(null)
+  const [health, setHealth]             = useState<HealthStatus | null>(null)
   const [confirmClear, setConfirmClear] = useState(false)
-  const pollRef                     = useRef<NodeJS.Timeout | null>(null)
-  const healthRef                   = useRef<NodeJS.Timeout | null>(null)
-
-  // ── Documents ──────────────────────────────────────────────────
+  const pollRef                         = useRef<NodeJS.Timeout | null>(null)
+  const healthRef                       = useRef<NodeJS.Timeout | null>(null)
 
   const fetchDocs = useCallback(async (showSpinner = false) => {
     if (showSpinner) setLoading(true)
@@ -137,8 +130,6 @@ export default function DocumentManager({ topK, onTopKChange, onClearChat }: Pro
     }
   }, [])
 
-  // ── Health polling ─────────────────────────────────────────────
-
   const fetchHealth = useCallback(async () => {
     try { setHealth(await systemApi.health()) } catch { /* silent */ }
   }, [])
@@ -149,20 +140,18 @@ export default function DocumentManager({ topK, onTopKChange, onClearChat }: Pro
     return () => { if (healthRef.current) clearInterval(healthRef.current) }
   }, [fetchHealth])
 
-  // ── Clear conversation ─────────────────────────────────────────
-
   const handleClearClick = () => {
     if (!confirmClear) { setConfirmClear(true); setTimeout(() => setConfirmClear(false), 3000); return }
     onClearChat()
     setConfirmClear(false)
   }
 
-  // ── Render ─────────────────────────────────────────────────────
+  const sliderPct = ((topK - 1) / 14) * 100
 
   return (
     <div className="flex flex-col gap-5 p-4 pb-6">
 
-      {/* ══ Knowledge Base ══════════════════════════════════════ */}
+      {/* ══ Knowledge Base ══ */}
       <section>
         <SectionLabel icon={<UploadCloud className="w-3.5 h-3.5" />} title="Knowledge Base" />
         <FileUpload onUploadComplete={handleUpload} />
@@ -170,20 +159,23 @@ export default function DocumentManager({ topK, onTopKChange, onClearChat }: Pro
 
       <div className="border-t border-gray-100" />
 
-      {/* ══ Indexed Documents ═══════════════════════════════════ */}
+      {/* ══ Indexed Documents ══ */}
       <section>
         <div className="flex items-center justify-between mb-2">
           <SectionLabel icon={<Library className="w-3.5 h-3.5" />} title="Indexed Documents" />
           <div className="flex items-center gap-1.5">
             {documents.length > 0 && (
-              <span className="text-[10px] bg-violet-100 text-violet-600 border border-violet-200 rounded-full px-2 py-0.5 font-medium">
+              <span className="text-[10px] rounded-full px-2 py-0.5 font-medium border"
+                style={{ backgroundColor: '#E0EEFD', color: '#016CE1', borderColor: 'rgba(1,108,225,0.25)' }}>
                 {documents.length}
               </span>
             )}
             <button
               onClick={() => fetchDocs(false)}
-              className="p-1 rounded-lg text-gray-400 hover:text-violet-500 hover:bg-violet-50 transition-colors"
+              className="p-1 rounded-lg text-gray-400 transition-colors"
               title="Refresh"
+              onMouseEnter={e => { e.currentTarget.style.color = '#016CE1'; e.currentTarget.style.backgroundColor = '#E0EEFD' }}
+              onMouseLeave={e => { e.currentTarget.style.color = ''; e.currentTarget.style.backgroundColor = '' }}
             >
               <RefreshCw className="w-3 h-3" />
             </button>
@@ -198,7 +190,7 @@ export default function DocumentManager({ topK, onTopKChange, onClearChat }: Pro
 
         {loading ? (
           <div className="flex justify-center py-8">
-            <Loader2 className="w-5 h-5 text-violet-400 animate-spin" />
+            <Loader2 className="w-5 h-5 animate-spin" style={{ color: '#016CE1' }} />
           </div>
         ) : documents.length === 0 ? (
           <div className="text-center py-6 text-gray-400">
@@ -213,10 +205,22 @@ export default function DocumentManager({ topK, onTopKChange, onClearChat }: Pro
                 key={doc.id}
                 className={clsx(
                   'group flex items-start gap-3 p-3 rounded-xl border transition-all',
-                  doc.status === 'ready'      && 'border-gray-200 bg-white hover:bg-violet-50 hover:border-violet-200',
+                  doc.status === 'ready'      && 'border-gray-200 bg-white',
                   doc.status === 'processing' && 'border-amber-200 bg-amber-50',
                   doc.status === 'failed'     && 'border-red-200 bg-red-50',
                 )}
+                onMouseEnter={e => {
+                  if (doc.status === 'ready') {
+                    e.currentTarget.style.backgroundColor = '#E0EEFD'
+                    e.currentTarget.style.borderColor = '#016CE1'
+                  }
+                }}
+                onMouseLeave={e => {
+                  if (doc.status === 'ready') {
+                    e.currentTarget.style.backgroundColor = ''
+                    e.currentTarget.style.borderColor = ''
+                  }
+                }}
               >
                 <div className="mt-0.5"><FileIcon type={doc.file_type} /></div>
 
@@ -257,32 +261,31 @@ export default function DocumentManager({ topK, onTopKChange, onClearChat }: Pro
 
       <div className="border-t border-gray-100" />
 
-      {/* ══ Retrieval Settings ══════════════════════════════════ */}
+      {/* ══ Retrieval Settings ══ */}
       <section>
         <SectionLabel icon={<SlidersHorizontal className="w-3.5 h-3.5" />} title="Retrieval Settings" />
 
-        <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 space-y-3">
+        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs font-medium text-gray-700">Context chunks</p>
               <p className="text-[10px] text-gray-400 mt-0.5">Passages retrieved per question</p>
             </div>
-            <span className="text-sm font-bold text-violet-600 bg-violet-50 border border-violet-200 w-8 h-8 rounded-lg flex items-center justify-center">
+            <span className="text-sm font-bold w-8 h-8 rounded-lg flex items-center justify-center border"
+              style={{ backgroundColor: '#E0EEFD', color: '#016CE1', borderColor: 'rgba(1,108,225,0.25)' }}>
               {topK}
             </span>
           </div>
 
           <input
             type="range"
-            min={1}
-            max={15}
-            step={1}
+            min={1} max={15} step={1}
             value={topK}
             onChange={e => onTopKChange(Number(e.target.value))}
             className="w-full h-1.5 rounded-full appearance-none cursor-pointer"
             style={{
-              background: `linear-gradient(to right, #7c3aed ${((topK - 1) / 14) * 100}%, #e5e7eb ${((topK - 1) / 14) * 100}%)`,
-              accentColor: '#7c3aed',
+              background: `linear-gradient(to right, #016CE1 ${sliderPct}%, #e5e7eb ${sliderPct}%)`,
+              accentColor: '#016CE1',
             }}
           />
 
@@ -295,18 +298,31 @@ export default function DocumentManager({ topK, onTopKChange, onClearChat }: Pro
 
       <div className="border-t border-gray-100" />
 
-      {/* ══ Chat Controls ═══════════════════════════════════════ */}
+      {/* ══ Chat Controls ══ */}
       <section>
         <SectionLabel icon={<MessageSquareX className="w-3.5 h-3.5" />} title="Chat Controls" />
 
         <button
           onClick={handleClearClick}
-          className={clsx(
-            'w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border text-xs font-medium transition-all',
-            confirmClear
-              ? 'bg-red-500 border-red-500 text-white hover:bg-red-600'
-              : 'bg-white border-gray-200 text-gray-600 hover:border-red-300 hover:text-red-500 hover:bg-red-50',
-          )}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border text-xs font-medium transition-all"
+          style={confirmClear
+            ? { backgroundColor: '#ef4444', borderColor: '#ef4444', color: 'white' }
+            : { backgroundColor: 'white', borderColor: '#e5e7eb', color: '#374151' }
+          }
+          onMouseEnter={e => {
+            if (!confirmClear) {
+              e.currentTarget.style.borderColor = '#fca5a5'
+              e.currentTarget.style.color = '#ef4444'
+              e.currentTarget.style.backgroundColor = '#fff1f2'
+            }
+          }}
+          onMouseLeave={e => {
+            if (!confirmClear) {
+              e.currentTarget.style.borderColor = '#e5e7eb'
+              e.currentTarget.style.color = '#374151'
+              e.currentTarget.style.backgroundColor = 'white'
+            }
+          }}
         >
           <MessageSquareX className="w-3.5 h-3.5" />
           {confirmClear ? 'Tap again to confirm' : 'Clear Conversation'}
@@ -318,35 +334,21 @@ export default function DocumentManager({ topK, onTopKChange, onClearChat }: Pro
 
       <div className="border-t border-gray-100" />
 
-      {/* ══ System Status ═══════════════════════════════════════ */}
+      {/* ══ System Status ══ */}
       <section>
         <SectionLabel icon={<Activity className="w-3.5 h-3.5" />} title="System Status" />
 
-        <div className="bg-gray-50 rounded-xl border border-gray-200 divide-y divide-gray-100 overflow-hidden text-xs">
+        <div className="rounded-xl border border-gray-200 divide-y divide-gray-100 overflow-hidden text-xs bg-gray-50">
           <StatusRow
             label="Vector store"
             value={health ? 'Ready' : '—'}
-            valueClass={health ? 'text-emerald-600' : 'text-gray-400'}
-            dot={health ? 'bg-emerald-400' : 'bg-gray-300'}
+            valueStyle={health ? { color: '#02B3A8' } : { color: '#9ca3af' }}
+            dot={health ? '#02B3A8' : '#d1d5db'}
           />
-          <StatusRow
-            label="Documents"
-            value={health ? String(health.collection_stats.total_documents) : '—'}
-          />
-          <StatusRow
-            label="Chunks indexed"
-            value={health ? String(health.collection_stats.total_chunks) : '—'}
-          />
-          <StatusRow
-            label="Language model"
-            value={health?.model ?? '—'}
-            mono
-          />
-          <StatusRow
-            label="Embedding model"
-            value={health?.embedding_model ?? '—'}
-            mono
-          />
+          <StatusRow label="Documents" value={health ? String(health.collection_stats.total_documents) : '—'} />
+          <StatusRow label="Chunks indexed" value={health ? String(health.collection_stats.total_chunks) : '—'} />
+          <StatusRow label="Language model" value={health?.model ?? '—'} mono />
+          <StatusRow label="Embedding model" value={health?.embedding_model ?? '—'} mono />
         </div>
       </section>
     </div>
@@ -354,15 +356,11 @@ export default function DocumentManager({ topK, onTopKChange, onClearChat }: Pro
 }
 
 function StatusRow({
-  label,
-  value,
-  valueClass = 'text-gray-700',
-  dot,
-  mono = false,
+  label, value, valueStyle, dot, mono = false,
 }: {
   label: string
   value: string
-  valueClass?: string
+  valueStyle?: React.CSSProperties
   dot?: string
   mono?: boolean
 }) {
@@ -370,8 +368,8 @@ function StatusRow({
     <div className="flex items-center justify-between px-3 py-2">
       <span className="text-[11px] text-gray-500">{label}</span>
       <div className="flex items-center gap-1.5">
-        {dot && <span className={clsx('w-1.5 h-1.5 rounded-full', dot)} />}
-        <span className={clsx('text-[11px] font-medium', mono && 'font-mono', valueClass)}>
+        {dot && <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: dot }} />}
+        <span className={clsx('text-[11px] font-medium text-gray-700', mono && 'font-mono')} style={valueStyle}>
           {value}
         </span>
       </div>

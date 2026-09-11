@@ -67,20 +67,34 @@ export default function FileUpload({ onUploadComplete }: { onUploadComplete: (do
       className={clsx(
         'relative border-2 border-dashed rounded-xl p-5 text-center cursor-pointer transition-all duration-200 select-none',
         state === 'uploading' && 'cursor-not-allowed opacity-70',
-        isDragActive          && 'border-violet-400 bg-violet-50',
-        state === 'idle' && !isDragActive && 'border-gray-300 hover:border-violet-400 hover:bg-violet-50',
         state === 'success'   && 'border-emerald-400 bg-emerald-50',
         state === 'error'     && 'border-red-400 bg-red-50',
       )}
+      style={
+        state === 'idle' || state === 'uploading'
+          ? isDragActive
+            ? { borderColor: '#016CE1', backgroundColor: '#E0EEFD' }
+            : { borderColor: '#d1d5db', backgroundColor: 'white' }
+          : undefined
+      }
+      onMouseEnter={e => {
+        if (state === 'idle' && !isDragActive)
+          e.currentTarget.style.borderColor = '#016CE1'
+      }}
+      onMouseLeave={e => {
+        if (state === 'idle' && !isDragActive)
+          e.currentTarget.style.borderColor = '#d1d5db'
+      }}
     >
       <input {...getInputProps()} />
 
       <div className="flex flex-col items-center gap-2">
-        {state === 'uploading' && <Loader2    className="w-7 h-7 text-violet-500 animate-spin" />}
+        {state === 'uploading' && <Loader2      className="w-7 h-7 animate-spin" style={{ color: '#016CE1' }} />}
         {state === 'success'   && <CheckCircle2 className="w-7 h-7 text-emerald-500" />}
-        {state === 'error'     && <XCircle    className="w-7 h-7 text-red-500" />}
+        {state === 'error'     && <XCircle      className="w-7 h-7 text-red-500" />}
         {state === 'idle'      && (
-          <UploadCloud className={clsx('w-7 h-7 transition-colors', isDragActive ? 'text-violet-500' : 'text-gray-400')} />
+          <UploadCloud className="w-7 h-7 transition-colors"
+            style={{ color: isDragActive ? '#016CE1' : '#9ca3af' }} />
         )}
 
         <div>
@@ -93,10 +107,10 @@ export default function FileUpload({ onUploadComplete }: { onUploadComplete: (do
             </>
           ) : (
             <p className={clsx('text-xs font-medium',
-              state === 'uploading' && 'text-violet-600',
-              state === 'success'   && 'text-emerald-600',
-              state === 'error'     && 'text-red-600',
-            )}>
+              state === 'success' && 'text-emerald-600',
+              state === 'error'   && 'text-red-600',
+            )}
+            style={state === 'uploading' ? { color: '#016CE1' } : undefined}>
               {feedback}
             </p>
           )}
@@ -106,8 +120,8 @@ export default function FileUpload({ onUploadComplete }: { onUploadComplete: (do
       {state === 'uploading' && (
         <div className="mt-3 w-full bg-gray-200 rounded-full h-1 overflow-hidden">
           <div
-            className="h-full bg-gradient-to-r from-violet-600 to-purple-500 rounded-full transition-all duration-300"
-            style={{ width: `${progress}%` }}
+            className="h-full rounded-full transition-all duration-300"
+            style={{ width: `${progress}%`, background: 'linear-gradient(to right, #016CE1, #02B3A8)' }}
           />
         </div>
       )}

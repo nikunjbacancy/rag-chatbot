@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback, MutableRefObject } from 'react'
+import Image from 'next/image'
 import { v4 as uuidv4 } from 'uuid'
 import { Send, Sparkles, Zap, BookOpen, Brain, Search } from 'lucide-react'
 import { chatApi, ChatMessage, Source } from '@/lib/api'
@@ -55,7 +56,6 @@ export default function ChatInterface({ topK, clearChatRef }: Props) {
     }
   }, [conversationId, messages.length])
 
-  // Expose clear to sidebar via ref
   useEffect(() => { clearChatRef.current = handleClear }, [handleClear, clearChatRef])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -129,14 +129,15 @@ export default function ChatInterface({ topK, clearChatRef }: Props) {
       {/* ── Top bar ── */}
       <div className="flex items-center justify-between px-5 py-2.5 border-b border-gray-200 flex-shrink-0 bg-white">
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 rounded-full bg-violet-500 shadow-sm shadow-violet-400/50" />
+          <div className="w-2 h-2 rounded-full" style={{ backgroundColor: '#016CE1' }} />
           <span className="text-xs text-gray-500">
             {messages.length === 0
               ? 'New conversation'
               : `${Math.ceil(messages.length / 2)} exchange${messages.length > 2 ? 's' : ''}`}
           </span>
         </div>
-        <span className="text-[10px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-md font-mono">
+        <span className="text-[10px] font-mono px-2 py-0.5 rounded-md font-medium"
+          style={{ backgroundColor: '#E0EEFD', color: '#016CE1' }}>
           top-k · {topK}
         </span>
       </div>
@@ -144,21 +145,17 @@ export default function ChatInterface({ topK, clearChatRef }: Props) {
       {/* ── Messages ── */}
       <div className="flex-1 overflow-y-auto px-5 py-6 space-y-5">
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full gap-7 text-center px-4">
-            <div className="relative">
-              <div className="absolute inset-0 rounded-full blur-2xl bg-violet-400/20 scale-150" />
-              <div className="relative w-16 h-16 rounded-2xl bg-gradient-to-br from-violet-600 to-purple-700 flex items-center justify-center shadow-xl shadow-violet-300/40 border border-violet-200">
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-                  <path d="M12 3c-1.5 0-2.9.4-4.1 1.1L12 8l4.1-3.9C14.9 3.4 13.5 3 12 3z" fill="#e9d5ff"/>
-                  <path d="M5 7.9L9 12l-4 4.1C3.4 14.9 3 12 3 12s.4-2.9 2-4.1z" fill="#c4b5fd" opacity="0.8"/>
-                  <path d="M19 7.9C20.6 9.1 21 10.5 21 12s-.6 2.9-2 4.1L15 12l4-4.1z" fill="#c4b5fd" opacity="0.8"/>
-                  <path d="M12 21c1.5 0 2.9-.4 4.1-1.1L12 16l-4.1 3.9C9.1 20.6 10.5 21 12 21z" fill="#e9d5ff"/>
-                </svg>
-              </div>
-            </div>
+          <div className="flex flex-col items-center justify-center h-full gap-6 text-center px-4">
+            <Image
+              src="/logo.png"
+              alt="SageBot"
+              width={110}
+              height={110}
+              className="object-contain"
+            />
 
             <div>
-              <h2 className="text-xl font-semibold text-gray-900">Hello, I'm SageBot</h2>
+              <h2 className="text-xl font-bold" style={{ color: '#011942' }}>Hello, I'm SageBot</h2>
               <p className="text-sm text-gray-500 mt-2 max-w-md leading-relaxed">
                 Upload documents in the panel and ask me anything about them.
                 I'll retrieve the most relevant information and cite my sources.
@@ -170,16 +167,26 @@ export default function ChatInterface({ topK, clearChatRef }: Props) {
                 <button
                   key={text}
                   onClick={() => { setInputValue(text); inputRef.current?.focus() }}
-                  className="flex items-center gap-2.5 text-left px-4 py-3 rounded-xl border border-gray-200 bg-white hover:bg-violet-50 hover:border-violet-300 transition-all text-xs text-gray-600 hover:text-violet-700 group shadow-sm"
+                  className="flex items-center gap-2.5 text-left px-4 py-3 rounded-xl border border-gray-200 bg-white transition-all text-xs text-gray-600 group shadow-sm"
+                  onMouseEnter={e => {
+                    e.currentTarget.style.backgroundColor = '#E0EEFD'
+                    e.currentTarget.style.borderColor = '#016CE1'
+                    e.currentTarget.style.color = '#016CE1'
+                  }}
+                  onMouseLeave={e => {
+                    e.currentTarget.style.backgroundColor = ''
+                    e.currentTarget.style.borderColor = ''
+                    e.currentTarget.style.color = ''
+                  }}
                 >
-                  <span className="text-violet-500 group-hover:text-violet-600 flex-shrink-0">{icon}</span>
+                  <span style={{ color: '#016CE1' }} className="flex-shrink-0">{icon}</span>
                   {text}
                 </button>
               ))}
             </div>
 
             <p className="text-[11px] text-gray-400 flex items-center gap-1.5">
-              <Sparkles className="w-3 h-3 text-violet-400" />
+              <Sparkles className="w-3 h-3" style={{ color: '#02B3A8' }} />
               Hybrid vector + BM25 retrieval · Source citations · Streaming responses
             </p>
           </div>
@@ -200,11 +207,12 @@ export default function ChatInterface({ topK, clearChatRef }: Props) {
 
       {/* ── Input ── */}
       <div className="flex-shrink-0 px-5 pb-5 pt-3 border-t border-gray-200 bg-white">
-        <div className={clsx(
-          'flex items-end gap-3 rounded-2xl px-4 py-3 border transition-all duration-200',
-          'bg-white border-gray-200',
-          'focus-within:border-violet-400 focus-within:shadow-lg focus-within:shadow-violet-100',
-        )}>
+        <div
+          className="flex items-end gap-3 rounded-2xl px-4 py-3 border border-gray-200 bg-white transition-all duration-200"
+          style={{ ['--tw-shadow' as string]: 'none' }}
+          onFocusCapture={e => e.currentTarget.style.borderColor = '#016CE1'}
+          onBlurCapture={e => e.currentTarget.style.borderColor = ''}
+        >
           <textarea
             ref={inputRef}
             value={inputValue}
@@ -218,12 +226,13 @@ export default function ChatInterface({ topK, clearChatRef }: Props) {
           <button
             onClick={handleSend}
             disabled={!inputValue.trim() || isStreaming}
-            className={clsx(
-              'flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-all',
-              inputValue.trim() && !isStreaming
-                ? 'bg-gradient-to-br from-violet-600 to-purple-700 hover:from-violet-500 hover:to-purple-600 text-white shadow-md shadow-violet-300/50'
-                : 'bg-gray-100 text-gray-400 cursor-not-allowed',
-            )}
+            className="flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-all text-white disabled:opacity-40 disabled:cursor-not-allowed"
+            style={{
+              background: inputValue.trim() && !isStreaming
+                ? 'linear-gradient(135deg, #016CE1, #011942)'
+                : '#e5e7eb',
+              color: inputValue.trim() && !isStreaming ? 'white' : '#9ca3af',
+            }}
           >
             <Send className="w-3.5 h-3.5" />
           </button>
