@@ -1,3 +1,4 @@
+import json
 import logging
 import uuid
 from datetime import datetime
@@ -19,10 +20,10 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/documents", tags=["documents"])
 
 # ------------------------------------------------------------------ #
-# In-memory document metadata store                                    #
-# { doc_id: DocumentRecord dict }                                      #
+# Document metadata store (in-memory, persisted to JSON on disk)      #
 # ------------------------------------------------------------------ #
 _documents: Dict[str, Dict[str, Any]] = {}
+_store_path: Path = Path(settings.chroma_persist_dir) / "documents.json"
 
 SUPPORTED_EXTENSIONS = {"pdf", "docx", "txt", "md", "csv"}
 MIME_TO_EXT = {
@@ -34,9 +35,47 @@ MIME_TO_EXT = {
     "application/csv": "csv",
 }
 
+# ------------------------------------------------------------------ #
+# Persistence helpers                                                  #
+# ------------------------------------------------------------------ #
+
+def _save_store() -> None:
+    """Serialize _documents to JSON on disk."""
+    try:
+        serializable: Dict[str, Any] = {}
+        for doc_id, doc in _documents.items():
+            row = dict(doc)
+            if isinstance(row.get("created_at"), datetime):
+                row["created_at"] = row["created_at"].isoformat()
+            if isinstance(row.get("status"), DocumentStatus):
+                row["status"] = row["status"].value
+            serializable[doc_id] = row
+        _store_path.parent.mkdir(parents=True, exist_ok=True)
+        _store_path.write_text(json.dumps(serializable, indent=2))
+    except Exception as exc:
+        logger.warning("Could not save document store: %s", exc)
+
+
+def load_store() -> None:
+    """Load persisted document metadata from disk into _documents. Called at startup."""
+    if not _store_path.exists():
+        logger.info("No persisted document store found — starting fresh.")
+        return
+    try:
+        data: Dict[str, Any] = json.loads(_store_path.read_text())
+        for doc_id, row in data.items():
+            if isinstance(row.get("created_at"), str):
+                row["created_at"] = datetime.fromisoformat(row["created_at"])
+            if isinstance(row.get("status"), str):
+                row["status"] = DocumentStatus(row["status"])
+            _documents[doc_id] = row
+        logger.info("Restored %d document(s) from persistent store.", len(_documents))
+    except Exception as exc:
+        logger.warning("Could not load document store: %s", exc)
+
 
 def get_documents_store() -> Dict[str, Dict[str, Any]]:
-    """Expose the in-memory store so other modules (e.g. chat) can read it."""
+    """Expose the store so other modules (e.g. chat) can read it."""
     return _documents
 
 
@@ -46,12 +85,12 @@ def get_documents_store() -> Dict[str, Dict[str, Any]]:
 
 async def _process_document_background(doc_id: str, file_path: Path, filename: str) -> None:
     """Parse, chunk, embed and index a document; update status in-place."""
-    from app.main import document_processor, embedding_service, retrieval_service  # lazy import
+    from app.main import document_processor, embedding_service, retrieval_service
 
     try:
         _documents[doc_id]["status"] = DocumentStatus.processing
+        _save_store()
 
-        # 1. Parse & chunk
         chunks = await document_processor.process_document(
             file_path=file_path,
             doc_id=doc_id,
@@ -63,22 +102,20 @@ async def _process_document_background(doc_id: str, file_path: Path, filename: s
         if not chunks:
             raise ValueError("No chunks produced from document.")
 
-        # 2. Embed
         texts = [c["text"] for c in chunks]
         embeddings = embedding_service.embed_texts(texts)
-
-        # 3. Store in vector DB + BM25
         retrieval_service.add_chunks(doc_id=doc_id, chunks=chunks, embeddings=embeddings)
 
-        # 4. Update metadata
         _documents[doc_id]["status"] = DocumentStatus.ready
         _documents[doc_id]["chunk_count"] = len(chunks)
-        logger.info("Document %s (%s) processed successfully: %d chunks", doc_id, filename, len(chunks))
+        _save_store()
+        logger.info("Document %s (%s) processed: %d chunks", doc_id, filename, len(chunks))
 
     except Exception as exc:
-        logger.error("Processing failed for document %s: %s", doc_id, exc, exc_info=True)
+        logger.error("Processing failed for %s: %s", doc_id, exc, exc_info=True)
         _documents[doc_id]["status"] = DocumentStatus.failed
         _documents[doc_id]["error_message"] = str(exc)
+        _save_store()
 
 
 # ------------------------------------------------------------------ #
@@ -90,8 +127,6 @@ async def upload_document(
     background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
 ):
-    """Accept a file upload, save it to disk, and kick off background processing."""
-    # Validate extension
     original_name = file.filename or "unknown"
     ext = original_name.rsplit(".", 1)[-1].lower() if "." in original_name else ""
     if ext not in SUPPORTED_EXTENSIONS:
@@ -100,7 +135,6 @@ async def upload_document(
             detail=f"Unsupported file type '{ext}'. Supported: {', '.join(sorted(SUPPORTED_EXTENSIONS))}",
         )
 
-    # Read content and validate size
     content = await file.read()
     size_bytes = len(content)
     max_bytes = settings.max_file_size_mb * 1024 * 1024
@@ -110,7 +144,6 @@ async def upload_document(
             detail=f"File exceeds maximum size of {settings.max_file_size_mb} MB.",
         )
 
-    # Persist file
     doc_id = str(uuid.uuid4())
     uploads_path = Path(settings.uploads_dir)
     uploads_path.mkdir(parents=True, exist_ok=True)
@@ -120,7 +153,6 @@ async def upload_document(
     async with aiofiles.open(file_path, "wb") as out:
         await out.write(content)
 
-    # Register in memory
     now = datetime.utcnow()
     _documents[doc_id] = {
         "id": doc_id,
@@ -133,8 +165,8 @@ async def upload_document(
         "file_path": str(file_path),
         "error_message": None,
     }
+    _save_store()
 
-    # Schedule background processing
     background_tasks.add_task(_process_document_background, doc_id, file_path, original_name)
     logger.info("Document %s (%s) queued for processing", doc_id, original_name)
 
@@ -143,19 +175,16 @@ async def upload_document(
 
 @router.get("/", response_model=DocumentListResponse)
 async def list_documents():
-    """Return all documents and their current status."""
     docs = [
         DocumentResponse(**{k: v for k, v in doc.items() if k != "file_path"})
         for doc in _documents.values()
     ]
-    # Sort by creation time descending
     docs.sort(key=lambda d: d.created_at, reverse=True)
     return DocumentListResponse(documents=docs, total=len(docs))
 
 
 @router.get("/{doc_id}", response_model=DocumentResponse)
 async def get_document(doc_id: str):
-    """Return metadata for a single document."""
     doc = _documents.get(doc_id)
     if doc is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found.")
@@ -164,20 +193,17 @@ async def get_document(doc_id: str):
 
 @router.delete("/{doc_id}", response_model=DeleteResponse)
 async def delete_document(doc_id: str):
-    """Delete a document and remove all its chunks from the vector store."""
     doc = _documents.get(doc_id)
     if doc is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found.")
 
-    from app.main import retrieval_service  # lazy import to avoid circular
+    from app.main import retrieval_service
 
-    # Remove from vector store
     try:
         retrieval_service.delete_document(doc_id)
     except Exception as exc:
         logger.warning("Could not fully remove chunks for %s: %s", doc_id, exc)
 
-    # Delete file from disk
     file_path = Path(doc.get("file_path", ""))
     if file_path.exists():
         try:
@@ -185,8 +211,8 @@ async def delete_document(doc_id: str):
         except Exception as exc:
             logger.warning("Could not delete file %s: %s", file_path, exc)
 
-    # Remove from memory
     del _documents[doc_id]
+    _save_store()
     logger.info("Document %s deleted", doc_id)
 
     return DeleteResponse(success=True, message=f"Document '{doc['filename']}' deleted successfully.")

@@ -53,6 +53,10 @@ async def lifespan(app: FastAPI):
     logger.info("Initialising generation service …")
     generation_service = GenerationService()
 
+    # Restore persisted document metadata
+    from app.api.documents import load_store
+    load_store()
+
     logger.info("All services initialised. RAG chatbot is ready.")
     yield
 
