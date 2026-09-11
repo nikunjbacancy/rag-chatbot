@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback, MutableRefObject } from 'react'
 import Image from 'next/image'
 import { v4 as uuidv4 } from 'uuid'
-import { Send, Sparkles, Zap, BookOpen, Brain, Search } from 'lucide-react'
+import { Send, Sparkles, Zap, BookOpen, Brain, Search, Loader2 } from 'lucide-react'
 import { chatApi, ChatMessage, Source } from '@/lib/api'
 import MessageBubble from './MessageBubble'
 import clsx from 'clsx'
@@ -58,6 +58,7 @@ export default function ChatInterface({ topK, clearChatRef }: Props) {
   const [isStreaming, setIsStreaming]   = useState(false)
   const [conversationId, setConversationId] = useState<string>(() => uuidv4())
   const [error, setError]               = useState<string | null>(null)
+  const [inputFocused, setInputFocused] = useState(false)
 
   const bottomRef         = useRef<HTMLDivElement>(null)
   const inputRef          = useRef<HTMLTextAreaElement>(null)
@@ -261,40 +262,59 @@ export default function ChatInterface({ topK, clearChatRef }: Props) {
       </div>
 
       {/* ── Input ── */}
-      <div className="flex-shrink-0 px-5 pb-5 pt-3 border-t border-gray-200 bg-white">
+      <div className="flex-shrink-0 px-4 pb-4 pt-3 border-t border-gray-200 bg-white">
         <div
-          className="flex items-end gap-3 rounded-2xl px-4 py-3 border border-gray-200 bg-white transition-all duration-200"
-          style={{ ['--tw-shadow' as string]: 'none' }}
-          onFocusCapture={e => e.currentTarget.style.borderColor = '#016CE1'}
-          onBlurCapture={e => e.currentTarget.style.borderColor = ''}
+          className="rounded-2xl border bg-white transition-all duration-200 overflow-hidden"
+          style={{
+            borderColor: inputFocused ? '#016CE1' : '#e5e7eb',
+            boxShadow: inputFocused
+              ? '0 0 0 3px rgba(1,108,225,0.10), 0 1px 4px rgba(0,0,0,0.06)'
+              : '0 1px 3px rgba(0,0,0,0.06)',
+          }}
         >
+          {/* Textarea */}
           <textarea
             ref={inputRef}
             value={inputValue}
             onChange={handleInputChange}
             onKeyDown={handleKeyDown}
+            onFocus={() => setInputFocused(true)}
+            onBlur={() => setInputFocused(false)}
             disabled={isStreaming}
-            placeholder="Ask a question about your documents… (Enter to send)"
+            placeholder="Ask anything about your documents…"
             rows={1}
-            className="flex-1 bg-transparent text-sm text-gray-900 placeholder-gray-400 resize-none outline-none min-h-[1.4rem] max-h-40 overflow-y-auto disabled:opacity-50"
+            className="w-full px-4 pt-3.5 pb-1 bg-transparent text-sm text-gray-900 placeholder-gray-400 resize-none outline-none min-h-[2.2rem] max-h-40 overflow-y-auto disabled:opacity-60"
           />
-          <button
-            onClick={handleSend}
-            disabled={!inputValue.trim() || isStreaming}
-            className="flex-shrink-0 w-8 h-8 rounded-xl flex items-center justify-center transition-all text-white disabled:opacity-40 disabled:cursor-not-allowed"
-            style={{
-              background: inputValue.trim() && !isStreaming
-                ? 'linear-gradient(135deg, #016CE1, #011942)'
-                : '#e5e7eb',
-              color: inputValue.trim() && !isStreaming ? 'white' : '#9ca3af',
-            }}
-          >
-            <Send className="w-3.5 h-3.5" />
-          </button>
+
+          {/* Bottom bar */}
+          <div className="flex items-center justify-between px-3 pb-2.5 pt-1">
+            {isStreaming ? (
+              <span className="flex items-center gap-1.5 text-[11px] font-medium" style={{ color: '#016CE1' }}>
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Generating response…
+              </span>
+            ) : (
+              <span className="text-[11px] text-gray-400">
+                ↵ Send &nbsp;·&nbsp; ⇧↵ New line
+              </span>
+            )}
+
+            <button
+              onClick={handleSend}
+              disabled={!inputValue.trim() || isStreaming}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+              style={{
+                background: inputValue.trim() && !isStreaming
+                  ? 'linear-gradient(135deg, #016CE1, #011942)'
+                  : '#f3f4f6',
+                color: inputValue.trim() && !isStreaming ? '#ffffff' : '#9ca3af',
+              }}
+            >
+              <Send className="w-3.5 h-3.5" />
+              Send
+            </button>
+          </div>
         </div>
-        <p className="text-center text-[10px] text-gray-400 mt-2">
-          Powered by Gemini · RAG pipeline · answers grounded in your documents
-        </p>
       </div>
     </div>
   )
