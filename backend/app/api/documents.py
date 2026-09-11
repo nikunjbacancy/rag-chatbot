@@ -173,7 +173,7 @@ async def upload_document(
     return DocumentResponse(**{k: v for k, v in _documents[doc_id].items() if k != "file_path"})
 
 
-@router.get("/", response_model=DocumentListResponse)
+@router.get("", response_model=DocumentListResponse)
 async def list_documents():
     docs = [
         DocumentResponse(**{k: v for k, v in doc.items() if k != "file_path"})
